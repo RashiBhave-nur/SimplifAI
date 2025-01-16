@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "publish-confluence-pages-programatically"
+version = "0.1.0"
+description = ""
+authors = ["githubofkrishnadhas <krishnadhasnk1997@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "=2.32.3"
+argparse = "=1.4.0"
+python-dotenv = "=1.0.1"
+atlassian-python-api = "=3.41.16"
+Markdown = "=3.6"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
