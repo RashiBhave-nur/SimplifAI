@@ -103,38 +103,46 @@ class HelpDesk():
     def suggest_and_create_issues(self, context):
         """Analyze context and create relevant JIRA issues"""
         # Use the LLM to analyze the context and suggest issues
-        prompt = f"""Based on the following context, suggest potential JIRA issues that should be created:
-        
+        prompt = """Based on the following context, suggest ONE potential JIRA issue that should be created.
+        Format your response exactly like this:
+        Summary: <issue summary>
+        Description: <issue description>
+        Type: Task
+
+        Context:
         {context}
-        
-        Format each issue as:
-        - Summary: <issue summary>
-        - Description: <issue description>
-        - Type: <issue type>
         """
         
-        query = {"query": prompt}
-        suggestions = self.retrieval_qa_chain(query)
+        query = {"query": prompt.format(context=context)}
+        suggestion = self.retrieval_qa_chain(query)
         
-        # Parse suggestions and create JIRA issues
-        issues = []
-        for suggestion in suggestions['result'].split('\n-'):
-            if not suggestion.strip():
-                continue
-                
-            # Parse the suggestion
-            lines = suggestion.strip().split('\n')
-            summary = lines[0].replace('Summary:', '').strip()
-            description = lines[1].replace('Description:', '').strip()
-            issue_type = lines[2].replace('Type:', '').strip()
+        # Parse the LLM response
+        try:
+            lines = suggestion['result'].strip().split('\n')
+            issue_data = {}
+            
+            for line in lines:
+                if line.startswith('Summary:'):
+                    issue_data['summary'] = line.replace('Summary:', '').strip()
+                elif line.startswith('Description:'):
+                    issue_data['description'] = line.replace('Description:', '').strip()
+                elif line.startswith('Type:'):
+                    issue_data['type'] = line.replace('Type:', '').strip()
+            
+            # Validate we have all required fields
+            if not all(k in issue_data for k in ['summary', 'description', 'type']):
+                raise ValueError("Missing required issue fields in LLM response")
             
             # Create the JIRA issue
-            issue = self.jira_service.create_issue(
+            issue = self.jira_service.create_ticket(
                 project=os.environ.get('JIRA_PROJECT'),
-                summary=summary,
-                description=description,
-                issue_type=issue_type
+                summary=issue_data['summary'],
+                description=issue_data['description'],
+                issue_type=issue_data['type']
             )
-            issues.append(issue)
             
-        return issues
+            return [issue]
+            
+        except Exception as e:
+            print(f"Error creating JIRA issue: {str(e)}")
+            return []

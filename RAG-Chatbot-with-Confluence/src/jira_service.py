@@ -11,6 +11,7 @@ class JiraService:
             server=server,
             basic_auth=(username, api_key)
         )
+        self.issue_creator = IssueCreator()
         self._setup_parsers()
 
     def _setup_parsers(self):
@@ -19,12 +20,12 @@ class JiraService:
         subparsers = self.parser.add_subparsers()
         
         # Initialize command handlers
-        self.issue_handler = create_issue(subparsers)
+        self.issue_handler = self.issue_creator.register_subcommands(subparsers)
         self.list_handler = ls(subparsers)
         self.update_handler = UpdateSubCommand(subparsers)
         self.comment_handler = comment(subparsers)
 
-    def create_issue(self, project, summary, description, issue_type='Task'):
+    def create_ticket(self, project, summary, description, issue_type='Task'):
         """Create a JIRA issue"""
         args = self.parser.parse_args([
             'create',

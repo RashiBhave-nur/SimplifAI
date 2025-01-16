@@ -74,7 +74,7 @@ class dump_issue(abstract_subcommand):
             yaml.dump(issue, sys.stdout, default_flow_style=False)
 
 
-class create_issue(abstract_subcommand):
+class IssueCreator(abstract_subcommand):
 
     def register_subcommands(self, subsubparsers):
         parser = subsubparsers.add_parser(
