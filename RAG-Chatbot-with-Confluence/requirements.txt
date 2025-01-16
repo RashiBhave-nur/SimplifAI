@@ -23,3 +23,16 @@ clickhouse-connect  # MyScale
 atlassian-python-api
 lxml
 markdownify
+
+#jira
+exitstatus
+jira
+pyyaml
+setuptools
+
+#test
+pytest
+pytest-cov
+pytest-mock
+pytest-vcr
+vcrpy

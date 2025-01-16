@@ -1,11 +1,12 @@
 import sys
+import os
 import load_db
 import collections
 from langchain.llms import OpenAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain.embeddings import OpenAIEmbeddings
-
+from jira_service import JiraService
 
 class HelpDesk():
     """Create the necessary objects to create a QARetrieval chain"""
@@ -25,6 +26,11 @@ class HelpDesk():
         self.retriever = self.db.as_retriever()
         self.retrieval_qa_chain = self.get_retrieval_qa()
 
+        self.jira_service = JiraService(
+            server=os.environ.get('JIRA_SERVER'),
+            username=os.environ.get('JIRA_USERNAME'),
+            api_key=os.environ.get('JIRA_API_KEY')
+        )
 
     def get_template(self):
         template = """
@@ -93,3 +99,42 @@ class HelpDesk():
 
         else:
             return "Sorry, I couldn't find any resources to answer your question."
+        
+    def suggest_and_create_issues(self, context):
+        """Analyze context and create relevant JIRA issues"""
+        # Use the LLM to analyze the context and suggest issues
+        prompt = f"""Based on the following context, suggest potential JIRA issues that should be created:
+        
+        {context}
+        
+        Format each issue as:
+        - Summary: <issue summary>
+        - Description: <issue description>
+        - Type: <issue type>
+        """
+        
+        query = {"query": prompt}
+        suggestions = self.retrieval_qa_chain(query)
+        
+        # Parse suggestions and create JIRA issues
+        issues = []
+        for suggestion in suggestions['result'].split('\n-'):
+            if not suggestion.strip():
+                continue
+                
+            # Parse the suggestion
+            lines = suggestion.strip().split('\n')
+            summary = lines[0].replace('Summary:', '').strip()
+            description = lines[1].replace('Description:', '').strip()
+            issue_type = lines[2].replace('Type:', '').strip()
+            
+            # Create the JIRA issue
+            issue = self.jira_service.create_issue(
+                project=os.environ.get('JIRA_PROJECT'),
+                summary=summary,
+                description=description,
+                issue_type=issue_type
+            )
+            issues.append(issue)
+            
+        return issues

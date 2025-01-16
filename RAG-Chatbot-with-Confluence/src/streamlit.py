@@ -33,6 +33,13 @@ if prompt := st.chat_input("How can I help you?"):
     # Get answer
     result, sources = model.retrieval_qa_inference(prompt)
 
+    if any(keyword in prompt.lower() for keyword in ['create issue', 'jira ticket', 'create task']):
+        issues = model.suggest_and_create_issues(result)
+        issue_links = "\n\nCreated JIRA issues:\n" + "\n".join([
+            f"- [{issue.key}] {issue.fields.summary}"
+            for issue in issues
+        ])
+        result += issue_links
     # Add answer and sources
     st.chat_message("assistant").write(result + '  \n  \n' + sources)
     st.session_state.messages.append({"role": "assistant", "content": result + '  \n  \n' + sources})
