@@ -1,0 +1,62 @@
+Analyze the following code file and provide a detailed technical summary focused on UML and diagram requirements.
+Structure your analysis in this exact format:
+
+## Class Diagram Elements
+```json
+{
+    "classes": [
+        {
+            "name": "ClassName",
+            "attributes": ["attribute1: type", "attribute2: type"],
+            "methods": ["method1(param: type): return_type", "method2(): void"],
+            "inherits_from": "ParentClass",
+            "implements": ["Interface1", "Interface2"]
+        }
+    ],
+    "relationships": [
+        {
+            "from": "ClassA",
+            "to": "ClassB",
+            "type": "inheritance|composition|aggregation|association",
+            "label": "optional relationship description"
+        }
+    ]
+}
+```
+
+## Sequence Flow
+```json
+{
+    "interactions": [
+        {
+            "from": "ComponentA",
+            "to": "ComponentB",
+            "method": "methodName()",
+            "description": "what this interaction does"
+        }
+    ]
+}
+```
+
+## Dependencies
+```json
+{
+    "external": ["import1", "import2"],
+    "internal": ["module1", "module2"],
+    "environment_vars": ["VAR1", "VAR2"]
+}
+```
+
+## Methods Detail
+```json
+{
+    "method_name": {
+        "inputs": ["param1: type", "param2: type"],
+        "output": "return_type",
+        "description": "what the method does",
+        "calls": ["other_method1", "other_method2"]
+    }
+}
+```
+
+Ensure all JSON files are valid and properly formatted for direct parsing.
