@@ -59,9 +59,21 @@ if directory_path:
     if st.sidebar.button("Generate High-Level Design"):
         with st.spinner("Analyzing codebase and generating design document..."):
             if selected_file == "All Files":
+
+                filtered_content = model.filter_important_files(code_content)
+                batched_content = model.batch_process_files(filtered_content) 
+
+                summaries = []
+                progress_bar = st.progress(0)
+                for i, batch in enumerate(batched_content):
+                    summary = model.generate_detailed_summary(batch)
+                    summaries.append(summary)
+                    progress_bar.progress((i + 1) / len(batched_content))
+                
+                # Combine summaries and generate final design
+                combined_summary = model.combine_summaries(summaries)
+                design = model.generate_high_level_design(combined_summary)
                 # Generate summary and design for all files
-                summary = model.generate_detailed_summary(code_content)
-                design = model.generate_high_level_design(summary)
             else:
                 # Generate summary and design for selected file only
                 file_content = {selected_file: code_content[selected_file]}

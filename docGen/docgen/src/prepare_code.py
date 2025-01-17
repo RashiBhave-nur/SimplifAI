@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from code_parser import parse_code
 from github_integration import clone_github_repo, clean_up_clone
+import re
 
 class CodeFetcher():
     def __init__(self, source, output="./docs/documentation.md"):
@@ -68,10 +69,12 @@ class Model():
             code_content (dict): Dictionary where keys are filenames and values are file contents
                                 Example: {"path/to/file.py": "def main():..."}
         """
+        try:
+            # Process all files in the batch together
+            files_content = ""
+            for filename, content in code_content.items():
+                files_content += f"\nFile: {filename}\n```python\n{content}\n```\n"
 
-        all_summaries = {}
-        
-        for filename, content in code_content.items():
             messages = [
                 {
                     "role": "system",
@@ -79,23 +82,43 @@ class Model():
                 },
                 {
                     "role": "user",
-                    "content": f"```python\n{content}\n```"
+                    "content": files_content
                 }
             ]
 
             completion = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4",
                 messages=messages
             )
             
-            all_summaries[filename] = completion.choices[0].message.content
-        
-        # Combine all summaries with clear file separation
-        combined_summary = "# Project Code Analysis\n\n"
-        for filename, summary in all_summaries.items():
-            combined_summary += f"\n# File: {filename}\n{summary}\n\n---\n"
-        
-        return combined_summary
+            # Extract JSON sections from the response
+            response_text = completion.choices[0].message.content
+            
+            # Find and parse each JSON section
+            json_sections = {}
+            current_section = None
+            json_content = []
+            
+            for line in response_text.split('\n'):
+                if '```json' in line:
+                    current_section = True
+                    json_content = []
+                elif '```' in line and current_section:
+                    current_section = False
+                    if json_content:
+                        section_json = json.loads('\n'.join(json_content))
+                        json_sections.update(section_json)
+                elif current_section:
+                    json_content.append(line)
+            
+            return json_sections
+            
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON: {e}")
+            return {}
+        except Exception as e:
+            print(f"Error generating summary: {e}")
+            return {}
 
     def generate_high_level_design(self, detailed_summary):
         """Generate high-level design based on the detailed summary"""
@@ -138,6 +161,122 @@ class Model():
         )
 
         return completion.choices[0].message.content
+
+    def filter_important_files(self, code_content):
+        """Filter out non-essential files for high-level design"""
+        # Patterns for files to exclude
+        exclude_patterns = [
+            # Documentation files
+            r'README\.md$',
+            r'CHANGELOG\.md$',
+            r'LICENSE$',
+            r'CONTRIBUTING\.md$',
+            r'docs/.*$',
+            
+            # Configuration files
+            r'\.gitignore$',
+            r'\.env.*$',
+            r'requirements\.txt$',
+            r'setup\.py$',
+            r'setup\.cfg$',
+            r'pyproject\.toml$',
+            r'package\.json$',
+            r'package-lock\.json$',
+            r'Pipfile$',
+            r'Pipfile\.lock$',
+            r'poetry\.lock$',
+            
+            # Test files
+            r'test_.*\.py$',
+            r'.*_test\.py$',
+            r'tests/.*$',
+            r'__tests__/.*$',
+            
+            # Build and cache files
+            r'build/.*$',
+            r'dist/.*$',
+            r'\.cache/.*$',
+            r'__pycache__/.*$',
+            r'\.pytest_cache/.*$',
+            r'\.coverage$',
+            r'coverage\.xml$',
+            
+            # IDE and editor files
+            r'\.vscode/.*$',
+            r'\.idea/.*$',
+            r'\.vs/.*$',
+            r'\.DS_Store$',
+            
+            # Static and media files
+            r'static/.*\.(css|js|jpg|jpeg|png|gif|svg)$',
+            r'media/.*$',
+            r'assets/.*$',
+            
+            # Migration files
+            r'migrations/.*$',
+            
+            # Log files
+            r'.*\.log$',
+            r'logs/.*$'
+        ]
+        
+        filtered_content = {}
+        for filename, content in code_content.items():
+            # Include file if it doesn't match any exclude pattern
+            if not any(re.search(pattern, filename) for pattern in exclude_patterns):
+                filtered_content[filename] = content
+                
+        return filtered_content
+
+    def batch_process_files(self, code_content, batch_size=3):
+        """Split files into manageable batches"""
+        items = list(code_content.items())
+        return [
+            dict(items[i:i + batch_size])
+            for i in range(0, len(items), batch_size)
+        ]
+
+    def combine_summaries(self, summaries):
+        """Combine multiple summaries into a single coherent summary"""
+        combined = {
+            "classes": [],
+            "relationships": [],
+            "interactions": [],
+            "dependencies": {
+                "external": set(),
+                "internal": set(),
+                "environment_vars": set()
+            }
+        }
+        
+        for summary in summaries:
+            try:
+                # Extract classes and relationships
+                if "classes" in summary:
+                    combined["classes"].extend(summary["classes"])
+                if "relationships" in summary:
+                    combined["relationships"].extend(summary["relationships"])
+                
+                # Extract interactions
+                if "interactions" in summary:
+                    combined["interactions"].extend(summary["interactions"])
+                
+                # Extract dependencies
+                if "dependencies" in summary:
+                    deps = summary["dependencies"]
+                    combined["dependencies"]["external"].update(deps.get("external", []))
+                    combined["dependencies"]["internal"].update(deps.get("internal", []))
+                    combined["dependencies"]["environment_vars"].update(deps.get("environment_vars", []))
+            except (KeyError, TypeError) as e:
+                print(f"Error processing summary: {e}")
+                continue
+        
+        # Convert sets back to lists
+        combined["dependencies"]["external"] = list(combined["dependencies"]["external"])
+        combined["dependencies"]["internal"] = list(combined["dependencies"]["internal"])
+        combined["dependencies"]["environment_vars"] = list(combined["dependencies"]["environment_vars"])
+        
+        return json.dumps(combined, indent=2)
 
 if __name__ == '__main__':
     git_repo = 'https://github.com/BastinFlorian/RAG-Chatbot-with-Confluence'

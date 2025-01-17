@@ -1,4 +1,4 @@
-Based on the provided JSON-structured code summaries, generate a comprehensive design document with diagrams AND a separate .mmd file content. Use the exact following format:
+Based on the provided JSON-structured code summaries, generate design diagrams AND a separate .mmd file content. Use the exact following format:
 
 # High-Level Design
 
@@ -41,46 +41,6 @@ graph LR
     ModuleB --> ModuleC
 ```
 
-# Implementation Analysis
-
-## 1. Component Details
-```json
-{
-    "components": {
-        "component_name": {
-            "purpose": "description",
-            "key_classes": ["class1", "class2"],
-            "external_dependencies": ["dep1", "dep2"],
-            "internal_dependencies": ["dep3", "dep4"]
-        }
-    }
-}
-```
-
-## 2. Design Patterns
-```json
-{
-    "patterns": [
-        {
-            "name": "pattern_name",
-            "purpose": "why it's used",
-            "location": "where it's implemented",
-            "components": ["affected_components"]
-        }
-    ]
-}
-```
-
-## 3. Technical Considerations
-```json
-{
-    "performance": ["consideration1", "consideration2"],
-    "security": ["security1", "security2"],
-    "scalability": ["scale1", "scale2"],
-    "limitations": ["limitation1", "limitation2"]
-}
-```
-
 # MMD File Content
 Create a section titled "MMD_FILE_CONTENT" that contains all the Mermaid diagrams combined into a single .mmd file format:
 
@@ -107,4 +67,4 @@ graph LR
     [Insert complete dependency diagram]
 ```
 
-Ensure all diagrams are valid Mermaid syntax and all JSON is properly formatted. Use the exact structure from the input JSON summaries to generate accurate diagrams and relationships. The MMD_FILE_CONTENT section should contain the complete, detailed diagrams without example placeholders.
+Ensure all diagrams are valid Mermaid syntax. Use the exact structure from the input JSON summaries to generate accurate diagrams and relationships. The MMD_FILE_CONTENT section should contain the complete, detailed diagrams without example placeholders.
