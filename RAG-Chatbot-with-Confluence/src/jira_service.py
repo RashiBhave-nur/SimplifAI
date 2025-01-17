@@ -1,4 +1,4 @@
-from jira_bot.commands.issue import create_issue
+from jira_bot.commands.issue import IssueCreator
 from jira_bot.commands.list import ls
 from jira_bot.commands.update import UpdateSubCommand
 from jira_bot.commands.comment import comment
